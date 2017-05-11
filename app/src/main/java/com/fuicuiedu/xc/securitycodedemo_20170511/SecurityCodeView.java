@@ -14,7 +14,7 @@ import android.widget.TextView;
  * Created by Administrator on 2017/5/11 0011.
  */
 
-public class SecurityCodeView extends RelativeLayout{
+public class SecurityCodeView extends RelativeLayout {
     private EditText editText;//输入框，透明不可见
     private TextView[] textViews;//验证码显示框
     private StringBuffer stringBuffer = new StringBuffer();//拼接string
@@ -23,22 +23,22 @@ public class SecurityCodeView extends RelativeLayout{
 
 
     public SecurityCodeView(Context context) {
-        this(context,null);
+        this(context, null);
     }
 
     public SecurityCodeView(Context context, AttributeSet attrs) {
-        this(context, attrs,0);
+        this(context, attrs, 0);
     }
 
     public SecurityCodeView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        
+
         initView();
     }
 
     private void initView() {
         //将自定义控件的布局填充进来
-        View.inflate(getContext(),R.layout.view_security_code,this);
+        View.inflate(getContext(), R.layout.view_security_code, this);
 
         editText = (EditText) findViewById(R.id.item_edittext);
 
@@ -68,12 +68,12 @@ public class SecurityCodeView extends RelativeLayout{
             public void afterTextChanged(Editable s) {
                 //重点~！！！！
                 //如果字符不为“”空时才进行操作
-                if (!s.toString().equals("")){
+                if (!s.toString().equals("")) {
                     //当用户输入完验证码时，不去做操作
-                    if (stringBuffer.length() > 4){
+                    if (stringBuffer.length() > 4) {
                         editText.setText("");
                         return;
-                    }else{
+                    } else {
                         //当字符添加到StringBuffer中
                         stringBuffer.append(s);
                         //添加后将EditText置空，造成没有文字输入的错觉
@@ -82,17 +82,21 @@ public class SecurityCodeView extends RelativeLayout{
                         count = stringBuffer.length();
                         //对最终的string进行赋值
                         inputContent = stringBuffer.toString();
-                        //todo 当文字长度为5，则调用完成输入监听
+                        //当文字长度为5，则调用完成输入监听
+                        if (stringBuffer.length() == 5) {
+                            if (inputCompleteListener != null) {
+                                inputCompleteListener.inputComplete();
+                            }
+                        }
                     }
 
-                }
-
-                //将输入内容用TextView进行展示
-                for (int i = 0; i < stringBuffer.length(); i++) {
-                    //设置TextView显示文字
-                    textViews[i].setText(String.valueOf(inputContent.charAt(i)));
-                    //改变textView背景
-                    textViews[i].setBackgroundResource(R.drawable.bg_verify_press);
+                    //将输入内容用TextView进行展示
+                    for (int i = 0; i < stringBuffer.length(); i++) {
+                        //设置TextView显示文字
+                        textViews[i].setText(String.valueOf(inputContent.charAt(i)));
+                        //改变textView背景
+                        textViews[i].setBackgroundResource(R.drawable.bg_verify_press);
+                    }
                 }
             }
         });
@@ -103,12 +107,72 @@ public class SecurityCodeView extends RelativeLayout{
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 //判断是否点击了删除按键
                 if (keyCode == KeyEvent.KEYCODE_DEL
-                        && event.getAction() == KeyEvent.ACTION_DOWN){
-                    // TODO: 2017/5/11 0011 删除操作
+                        && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    // 删除操作
+                    if (onKeyDelete()) return true;
                     return true;
                 }
                 return false;
             }
         });
+    }
+
+    //对外提供两个方法
+    //1.获取输入文本
+    public String getEditContent() {
+        return inputContent;
+    }
+
+    //2.清空输入内容
+    public void clearEditText() {
+        stringBuffer.delete(0, stringBuffer.length());
+        inputContent = stringBuffer.toString();
+        for (int i = 0; i < textViews.length; i++) {
+            textViews[i].setText("");
+            textViews[i].setBackgroundResource(R.drawable.bg_verify);
+        }
+    }
+
+    //当点击删除时触发
+    public boolean onKeyDelete() {
+        if (count == 0) {
+            count = 5;
+            return true;
+        }
+
+        if (stringBuffer.length() > 0) {
+            //删除相应位置的字符
+            stringBuffer.delete((count - 1), count);
+            //string长度减一
+            count--;
+            //重新赋值
+            inputContent = stringBuffer.toString();
+            //删除后的TextView置空
+            textViews[stringBuffer.length()].setText("");
+            //删除后的TextView背景改变
+            textViews[stringBuffer.length()].setBackgroundResource(R.drawable.bg_verify);
+            //删除的回调
+            if (inputCompleteListener != null) {
+                inputCompleteListener.deleteContent(true);
+            }
+        }
+        return false;
+    }
+
+
+    //输入完成监听------接口回调
+    public interface InputCompleteListener {
+
+        //输入完成
+        void inputComplete();
+
+        //删除回调
+        void deleteContent(boolean isDelete);
+    }
+
+    private InputCompleteListener inputCompleteListener;
+
+    public void setInputCompleteListener(InputCompleteListener inputCompleteListener) {
+        this.inputCompleteListener = inputCompleteListener;
     }
 }
